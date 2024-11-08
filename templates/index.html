@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dokkan Battle Damage Calculator</title>
+    <style>
+        body {
+            background-image: url('./static/assets/BG/dokkan_battle.jpg');
+            background-size: cover;
+            background-position: center;
+            margin: 0;
+            color: white;
+            text-align: center; /* Center text for the entire body */
+        }
+        table {
+            width: 25%;
+            border-collapse: collapse;
+            margin: 10px auto;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #000000;
+        }
+        /* Layout for form and selected boss */
+        .container {
+            display: flex;
+            justify-content: center; /* Center content horizontally */
+            margin: 20px auto; /* Center the container */
+            max-width: 1200px; /* Maximum width for larger screens */
+        }
+        /* Form styles */
+        form {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Two columns */
+            gap: 10px; /* Space between columns */
+            max-width: 600px; /* Limit the width */
+            margin-right: 20px; /* Space between form and selected boss */
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center items horizontally */
+        }
+        .form-group label {
+            margin-bottom: 5px; /* Space between label and input */
+        }
+        .form-group-checkbox {
+            grid-column: span 2; /* Make it span both columns */
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center checkbox */
+        }
+        .selected-boss {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Center image and name */
+            max-width: 350px; /* Limit width of the selected boss section */
+        }
+        .selected-boss img {
+            max-width: 100%; /* Make the image responsive */
+            height: auto; /* Maintain aspect ratio */
+        }
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 80%; /* Increase modal width to 80% */
+            max-height: 80%; /* Optionally increase modal height */
+            overflow-y: auto; /* Allow scrolling if content exceeds the height */
+            text-align: center;
+        }
+        .close-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            font-size: 30px;
+            cursor: pointer;
+        }
+        /* Style for the boss images in the modal */
+        .boss-selection {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            gap: 10px;
+        }
+        .boss-selection img {
+            cursor: pointer;
+            max-width: 350px; /* Increase maximum width of images */
+            max-height: 350px; /* Increase maximum height of images */
+            border: 2px solid transparent;
+            transition: border 0.3s ease;
+            object-fit: contain; /* Maintain aspect ratio without distortion */
+        }
+        .boss-selection img:hover {
+            border: 2px solid blue;
+        }
+        .selected {
+            border: 2px solid green !important;
+        }
+        /* Change the color of the modal header */
+        .modal-content h2 {
+            color: black; /* Set header text color to black */
+        }
+    </style>
+    <script>
+        // Function to show the modal
+        function showModal() {
+            document.getElementById('bossModal').style.display = 'flex';
+        }
+
+        // Function to hide the modal
+        function closeModal() {
+            document.getElementById('bossModal').style.display = 'none';
+        }
+
+        // Function to store form data in sessionStorage
+        function saveFormData() {
+            sessionStorage.setItem("boss_attack", document.getElementById("boss_attack").value);
+            // Set default value for damageReduction to 0 if empty
+            let damageReduction = document.getElementById("damageReduction").value;
+            sessionStorage.setItem("damageReduction", damageReduction === "" ? "0" : damageReduction);
+            sessionStorage.setItem("unit_defense", document.getElementById("unit_defense").value);
+            sessionStorage.setItem("unit_type", document.getElementById("unit_type").value);
+            sessionStorage.setItem("unit_class", document.getElementById("unit_class").value);
+            sessionStorage.setItem("passive_guard", document.getElementById("passive_guard").checked);
+            sessionStorage.setItem("boss_select", document.getElementById("boss_select").value);
+        }
+
+        // Function to select the boss from the modal and update the boss attack field
+        function selectBoss(bossId, bossAttack, imageElement) {
+            document.getElementById("boss_attack").value = bossAttack;
+            document.getElementById("boss_select").value = bossId; // Boss ID
+
+            // Remove "selected" class from all images
+            const allImages = document.querySelectorAll('.boss-selection img');
+            allImages.forEach(img => img.classList.remove('selected'));
+
+            // Add "selected" class to the clicked image
+            imageElement.classList.add('selected');
+
+            // Update selected boss image and name
+            const selectedBossImage = document.getElementById("selectedBossImage");
+            const selectedBossName = document.getElementById("selectedBossName");
+            selectedBossImage.src = imageElement.src; // Set selected boss image
+            selectedBossName.textContent = imageElement.alt; // Set selected boss name
+
+            // Close the modal
+            closeModal();
+        }
+
+        // Load the saved form data
+        function loadFormData() {
+            if (sessionStorage.getItem("boss_attack")) {
+                document.getElementById("boss_attack").value = sessionStorage.getItem("boss_attack");
+            }
+            if (sessionStorage.getItem("damageReduction")) {
+                document.getElementById("damageReduction").value = sessionStorage.getItem("damageReduction");
+            } else {
+                document.getElementById("damageReduction").value = "0"; // Set default value to 0
+            }
+            if (sessionStorage.getItem("unit_defense")) {
+                document.getElementById("unit_defense").value = sessionStorage.getItem("unit_defense");
+            }
+            if (sessionStorage.getItem("unit_type")) {
+                document.getElementById("unit_type").value = sessionStorage.getItem("unit_type");
+            }
+            if (sessionStorage.getItem("unit_class")) {
+                document.getElementById("unit_class").value = sessionStorage.getItem("unit_class");
+            }
+            if (sessionStorage.getItem("passive_guard") === "true") {
+                document.getElementById("passive_guard").checked = true;
+            }
+
+            const bossId = sessionStorage.getItem("boss_select");
+            if (bossId) {
+                const bossImage = document.querySelector(`img[data-boss-id='${bossId}']`);
+                if (bossImage) {
+                    const bossAttack = bossImage.getAttribute('data-boss-attack');
+                    selectBoss(bossId, bossAttack, bossImage);
+                }
+            }
+        }
+
+        // Close modal when clicking outside of the modal content
+        window.onclick = function(event) {
+            const modal = document.getElementById('bossModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+    </script>
+</head>
+<body>
+    <div>
+        <img src="./static/assets/Logos/logo_l.png" alt="Dokkan Battle" style="max-width: 15%; max-height: 15%;" />
+    </div>
+    
+    <h1>Dokkan Battle Damage Calculator</h1>
+    
+    <button type="button" onclick="showModal()">Bosses</button>
+
+    <!-- Modal for Boss Selection -->
+    <div id="bossModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h2>Select a Boss</h2>
+            <div class="boss-selection">
+                {% for boss_id, boss_data in bosses.items() %}
+                <img src="{{ url_for('static', filename='assets/BossImages/' ~ boss_data.name | replace(' ', '_') ~ '.png') }}" 
+                     alt="{{ boss_data.name }}" 
+                     data-boss-id="{{ boss_id }}"
+                     data-boss-attack="{{ boss_data.attack}}"
+                     onclick="selectBoss('{{ boss_id }}', {{ boss_data.attack }}, this)">
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <form method="POST" onsubmit="saveFormData()">
+            <input type="hidden" id="boss_select" name="boss_select" value="">
+
+            <div class="form-group">
+                <label for="boss_attack">Boss Attack:</label>
+                <input type="number" id="boss_attack" name="boss_attack" value="{{ boss_attack }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="damageReduction">Damage Reduction (%):</label>
+                <input type="number" id="damageReduction" name="damageReduction" value="0" min="0" max="100" step="1">
+            </div>
+
+            <div class="form-group">
+                <label for="unit_defense">Unit Defense:</label>
+                <input type="number" id="unit_defense" name="unit_defense" value="{{ unit_defense }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="unit_type">Unit Type:</label>
+                <select id="unit_type" name="unit_type" required>
+                    <option value="AGL">AGL</option>
+                    <option value="STR">STR</option>
+                    <option value="PHY">PHY</option>
+                    <option value="INT">INT</option>
+                    <option value="TEQ">TEQ</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="unit_class">Unit Class:</label>
+                <select id="unit_class" name="unit_class" required>
+                    <option value="Super">Super</option>
+                    <option value="Extreme">Extreme</option>
+                </select>
+            </div>
+
+            <div class="form-group-checkbox">
+                <label for="passive_guard">Enable Passive Guard:</label>
+                <input type="checkbox" id="passive_guard" name="passive_guard">
+            </div>
+
+            <div class="form-group" style="grid-column: span 2;">
+                <input type="submit" value="Calculate Damage">
+            </div>
+        </form>
+
+        <!-- Selected Boss Section -->
+        <div class="selected-boss">
+            <h2>Selected Boss</h2>
+            <img id="selectedBossImage" src="./static/assets/BossImages/Null_Boss.png" alt="Selected Boss Image">
+            <p id="selectedBossName">No Boss Selected</p>
+        </div>
+    </div>
+
+    {% if damage_outputs %}
+        <h2>Damage Outputs:</h2>
+        <table>
+            <thead>
+                <tr> 
+                    <th>Type</th>
+                    <th>Super</th>
+                    <th>Extreme</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for type_ in damage_outputs %}
+                    <tr>
+                        <td>{{ type_ }}</td>
+                        <td>{{ damage_outputs[type_]['Super'] | format_number }}</td>
+                        <td>{{ damage_outputs[type_]['Extreme'] | format_number }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    <script>
+        // Call loadFormData on page load
+        window.onload = function() {
+            loadFormData();
+        };
+    </script>
+</body>
+</html>
