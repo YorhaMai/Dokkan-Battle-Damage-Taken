@@ -1,9 +1,9 @@
 #######################################################################################################################
 # Dokkan Battle Damage Taken Calculator 
 # Goals :
-#           Create backend for calculating the damage taken      
-#           Build a frontend to display the program to users allowing them to easily use the application 
-#           Have a UI to select specific bosses 
+#           Create backend for calculating the damage taken-- DONE
+#           Build a frontend to display the program to users allowing them to easily use the application --DONE
+#           Have a UI to select specific bosses --DONE
 #           Be constantly up to date with hard bosses
 #######################################################################################################################
 from flask import Flask, render_template, request, session
